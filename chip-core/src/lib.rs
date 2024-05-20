@@ -162,14 +162,34 @@ impl Emulator {
         new_emulator
     }
 
-    /// Load the pre-configured fonts into RAM.
-    fn load_fonts(&mut self) {
-        self.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
-    }
-
     /// Reset the emulator state.
     pub fn reset(&mut self) {
         *self = Emulator::new();
+    }
+
+    /// Defines one CPU loop iteration:
+    /// 1. Starts with the `Fetch` step, fetches the value from the ROM 
+    /// data (which is loaded into RAM) at the memory address stored in 
+    /// the program counter.
+    /// 2. Decode the instruction.
+    /// 3. Execute the instruction.
+    /// 4. Move the program counter to the next instruction.
+    pub fn tick(&mut self) {
+        // Fetch step.
+        let op = self.fetch();
+        // Decode step.
+        // Execute step.
+    }
+
+    /// Fetches the current instruction from the memory address that 
+    /// the program counter is pointing to.
+    fn fetch(&mut self) -> u16 {
+        // TODO
+    }
+
+    /// Load the pre-configured fonts into RAM.
+    fn load_fonts(&mut self) {
+        self.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
     }
 
     /// Push an address onto the stack.
