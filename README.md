@@ -2,7 +2,7 @@
 
 Diving into emulation development at the same time as continuing to learn Rust. In doing some research, building a Chip-8 emulator is the has become the "Hello World" for emulation development.
 
-Chip-8 is an interpreted programming lanuage developed by Joseph Weibecker for an 1802 Microprocessor. Chip-8 programs are run on a Chip-8 virtual machine, which is what I will be building an emulator for in this project. I frequently referenced and followed [this](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/) guide as I worked through this project. The guide, written by Tobias V. Langhoff, is a great reference as it walks you through the process but doesn't give you the code.
+Chip-8 is an interpreted programming lanuage developed by Joseph Weibecker for an 1802 Microprocessor. Chip-8 programs are run on a Chip-8 virtual machine, which is what I will be building an emulator for in this project. I frequently referenced and followed [this](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/) guide as I worked through this project.
 
 ## Chip-8 Virtual Machine Tech Specs
 
