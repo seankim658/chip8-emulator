@@ -168,23 +168,60 @@ impl Emulator {
     }
 
     /// Defines one CPU loop iteration:
-    /// 1. Starts with the `Fetch` step, fetches the value from the ROM 
-    /// data (which is loaded into RAM) at the memory address stored in 
+    /// 1. Starts with the `Fetch` step, fetches the value from the ROM
+    /// data (which is loaded into RAM) at the memory address stored in
     /// the program counter.
     /// 2. Decode the instruction.
     /// 3. Execute the instruction.
     /// 4. Move the program counter to the next instruction.
     pub fn tick(&mut self) {
-        // Fetch step.
-        let op = self.fetch();
-        // Decode step.
-        // Execute step.
+        let opcode = self.fetch();
+        self.execute(opcode);
     }
 
-    /// Fetches the current instruction from the memory address that 
+    /// The two special purpose timers, the delay and sound timers,
+    /// tick once per frame rather than once per CPU cycle. As a
+    /// result, these neeed a separate ticker function.
+    pub fn timer_tick(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
+    }
+
+    /// Fetches the current instruction from the memory address that
     /// the program counter is pointing to.
     fn fetch(&mut self) -> u16 {
-        // TODO
+        // Since each opcode is two bytes and the RAM is stored as an
+        // array of single bytes, we first grab the higher byte of the
+        // current instruction and then grab the lower byte and combine
+        // them in big endian fashion.
+        //
+        // In Rust, array indices are of type usize so have to cast
+        // the program counter from u16 to usize.
+        let higher_byte = self.ram[self.program_counter as usize] as u16;
+        let lower_byte = self.ram[{ self.program_counter + 1 } as usize] as u16;
+        let opcode = (higher_byte << 8) | lower_byte;
+        self.program_counter += 2;
+        opcode
+    }
+
+    /// Decodes and performs the opcode instruction.
+    ///
+    /// #### Parameters:
+    /// - opcode: The opcode fetched from the program counter.
+    ///
+    fn execute(&mut self, opcode: u16) {
+        // We need to separate out each hex digit in the 2 byte opcode.
+        // We'll do this by bitwise AND'ing to retrieve the relevant
+        // bits and then right shifting them by the offset amount.
+        let hex_1 = (opcode & 0xF000) >> 12;
+        let hex_2 = (opcode & 0x0F00) >> 8;
+        let hex_3 = (opcode & 0x00F0) >> 4;
+        let hex_4 = opcode & 0x000F;
+        // TODO 
     }
 
     /// Load the pre-configured fonts into RAM.
