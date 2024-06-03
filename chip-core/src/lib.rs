@@ -221,7 +221,45 @@ impl Emulator {
         let hex_2 = (opcode & 0x0F00) >> 8;
         let hex_3 = (opcode & 0x00F0) >> 4;
         let hex_4 = opcode & 0x000F;
-        // TODO 
+
+        // Match statement for the opcode decoding and execution.
+        match (hex_1, hex_2, hex_3, hex_4) {
+            // NOP, do nothing opcode.
+            (0, 0, 0, 0) => (),
+            // CLS, clear screen opcode.
+            (0, 0, 0xE, 0) => {
+                // Clear the screen buffer.
+                self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT]
+            }
+            // RET, return from subroutine.
+            (0, 0, 0xE, 0xE) => {
+                // Pop the address to return to from the stack.
+                let return_address = self.pop();
+                // Set the program counter to the return address.
+                self.program_counter = return_address;
+            }
+            // JUMP, jump to memory location at NNN.
+            (1, _, _, _) => {
+                // Grab the memory address to jump to.
+                let nnn = opcode & 0xFFF;
+                // Set the program counter to the jump address.
+                self.program_counter = nnn;
+            }
+            // CALL, subroutine at the memory location NNN.
+            (2, _, _, _) => {
+                // Grab the memory address of the subroutine being called.
+                let nnn = opcode & 0xFFF;
+                // Push the current program counter onto the stack so it
+                // can be popped later when returning from the subroutine.
+                self.push(self.program_counter);
+                // Set the program counter to the subroutine address.
+                self.program_counter = nnn;
+            }
+            // TODO : implement the rest of the opcodes.
+            // Rust match statements must be exhaustive, so we need this match
+            // to handle unsupported opcodes.
+            (_, _, _, _) => unimplemented!("Opcode not supported: {}", opcode),
+        }
     }
 
     /// Load the pre-configured fonts into RAM.
