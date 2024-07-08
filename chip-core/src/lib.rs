@@ -217,10 +217,10 @@ impl Emulator {
         // We need to separate out each hex digit in the 2 byte opcode.
         // We'll do this by bitwise AND'ing to retrieve the relevant
         // bits and then right shifting them by the offset amount.
-        let hex_1 = (opcode & 0xF000) >> 12;
-        let hex_2 = (opcode & 0x0F00) >> 8;
-        let hex_3 = (opcode & 0x00F0) >> 4;
-        let hex_4 = opcode & 0x000F;
+        let hex_1 = ((opcode & 0xF000) >> 12) as usize;
+        let hex_2 = ((opcode & 0x0F00) >> 8) as usize;
+        let hex_3 = ((opcode & 0x00F0) >> 4) as usize;
+        let hex_4 = (opcode & 0x000F) as usize;
 
         // Match statement for the opcode decoding and execution.
         match (hex_1, hex_2, hex_3, hex_4) {
@@ -262,7 +262,7 @@ impl Emulator {
                 // Grab the raw value for the comparison.
                 let nn = (opcode & 0xFF) as u8;
                 // Grab the register to retrieve from.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Conditional operation.
                 if self.registers[x] == nn {
                     self.program_counter += 2;
@@ -275,7 +275,7 @@ impl Emulator {
                 // Grab the raw value for the comparison.
                 let nn = (opcode & 0xFF) as u8;
                 // Grab the register to retrieve from.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Conditional operation.
                 if self.registers[x] != nn {
                     self.program_counter += 2;
@@ -287,9 +287,9 @@ impl Emulator {
             // significant value is not used (opcode requires it be set to 0).
             (5, _, _, 0) => {
                 // Grab the first register to retrieve from.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Grab the second register to retrieve from.
-                let y = hex_3 as usize;
+                let y = hex_3;
                 // Conditional operation.
                 if self.registers[x] == self.registers[y] {
                     self.program_counter += 2;
@@ -298,7 +298,7 @@ impl Emulator {
             // SET; 6XNN, set register VX to the value NN.
             (6, _, _, _) => {
                 // Grab the register to set the value for.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Grab the value to set the register.
                 let nn = (opcode & 0xFF) as u8;
                 self.registers[x] = nn;
@@ -306,7 +306,7 @@ impl Emulator {
             // ADD; 7XNN, add the value NN to the value in register VX.
             (7, _, _, _) => {
                 // Grab the register to add to.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Grab the value to add.
                 let nn = (opcode & 0xFF) as u8;
                 // Note we can't use the regular addition operator here
@@ -318,9 +318,9 @@ impl Emulator {
             // SET_V; 8XY0, sets the value in register VX to the value in VY.
             (8, _, _, 0) => {
                 // Grab the target register.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Grab the source register.
-                let y = hex_3 as usize;
+                let y = hex_3;
                 // Set VX.
                 self.registers[x] = self.registers[y];
             }
@@ -328,9 +328,9 @@ impl Emulator {
             // a bitwise OR with the value in register VY.
             (8, _, _, 1) => {
                 // Grab the first register.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Grab the second register.
-                let y = hex_3 as usize;
+                let y = hex_3;
                 // Set the value of VX from the bitwise or.
                 self.registers[x] |= self.registers[y];
             }
@@ -338,9 +338,9 @@ impl Emulator {
             // a bitwise AND with the value in register VY.
             (8, _, _, 2) => {
                 // Grab the first register.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Grab the second register.
-                let y = hex_3 as usize;
+                let y = hex_3;
                 // Set the value of VX from the bitwise and.
                 self.registers[x] &= self.registers[y];
             }
@@ -348,9 +348,9 @@ impl Emulator {
             // a bitwise XOR with the value in register VY.
             (8, _, _, 3) => {
                 // Grab the first register.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Grab the second register.
-                let y = hex_3 as usize;
+                let y = hex_3;
                 // Set the value of VX from the bitwise XOR.
                 self.registers[x] ^= self.registers[y];
             }
@@ -358,21 +358,49 @@ impl Emulator {
             // in register VX and stores it in register VX.
             (8, _, _, 4) => {
                 // Grab the first register.
-                let x = hex_2 as usize;
+                let x = hex_2;
                 // Grab the second register.
-                let y = hex_3 as usize;
+                let y = hex_3;
                 // Add the values together and get the value (which will be a wrapping
                 // add if an overflow occurs) and a boolean flag indicating if an
                 // overflow occurred.
                 let (new_vx, carry) = self.registers[x].overflowing_add(self.registers[y]);
-                // Get the carry flag for the VF carry register. Indicates whether the
+                // Set the carry flag for the VF carry register. Indicates whether the
                 // last operation resulted in an overflow or underflow.
                 let new_vf = if carry { 1 } else { 0 };
                 // Set the new register values.
                 self.registers[x] = new_vx;
                 self.registers[0xF] = new_vf;
             }
-            // TODO : implement the rest of the chip-8 opcodes.
+            // SUB_V; 8XY5, subtracts the value in the register VY from the
+            // value in register VY and stores it in register VX.
+            (8, _, _, 5) => {
+                // Grab the first register.
+                let x = hex_2;
+                // Grab the second register.
+                let y = hex_3;
+                // Perform the subtraction and get the value (which will be a wrapping
+                // subtract if an underflow occurs) and a boolean flag indicating if
+                // an underflow occurred.
+                let (new_vx, borrow) = self.registers[x].overflowing_sub(self.registers[y]);
+                // Set the carry flag for the VF register.
+                let new_vf = if borrow { 0 } else { 1 };
+                // Set the new register values.
+                self.registers[x] = new_vx;
+                self.registers[0xF] = new_vf;
+            }
+            // SING_RSHIFT; 8XY6, performs a single right shift on the value in register VX.
+            (8, _, _, 6) => {
+                // Grab the value to shift.
+                let x = hex_2;
+                // Capture the dropped bit.
+                let lsb = self.registers[x] & 1;
+                // Shift the value.
+                self.registers[x] >>= 1;
+                // Set the dropped bit.
+                self.registers[0xF] = lsb;
+            }
+            // TODO 
             // Rust match statements must be exhaustive, so we need this match
             // to handle unsupported opcodes.
             (_, _, _, _) => unimplemented!("Opcode not supported: {}", opcode),
