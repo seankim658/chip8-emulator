@@ -50,5 +50,6 @@ Chip-8 has 35 opcodes, which are all two bytes long and stored big-endian (meani
 | 14  | `8XY3` | `XOR`         | Set the value of V register `X` to the bitwise XOR with the value in V register `Y`.                                                                                                                |
 | 15  | `8XY4` | `ADD_V`       | Adds the value in register `X` to the value in register `Y`. Store the value in register `X` and set the carry flag in register `F` based on if the operation underflowed or overflowed.            |
 | 16  | `8XY5` | `SUB_V`       | Subtracts the value in the register `Y` from the value in register `X`. Store the value in register `X` and set the carry flag in register `F` based on if the operation underflowed or overflowed. |
-| 17  | `8XY6` | `SING_RSHIFT` | Performs a single right shift on the value in register `X`.                                                                                                                                         |
-| 18  | ``  
+| 17  | `8XY6` | `SING_RSHIFT` | Performs a single right shift on the value in register `X` and stores the overflow bit in the flag register.                                                                                                                                         |
+| 18  | `8XY7` | `SUB_X`       | Subtracts the value in the register `X` from the value in register `Y`.                                                                                                                             |
+| 19  | `8XYE` | `SING_LSHIFT` | Performs a single left shift on the value in register `X` and stores the overflow bit in the flag register.                                                                                         |

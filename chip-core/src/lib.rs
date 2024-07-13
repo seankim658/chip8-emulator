@@ -373,7 +373,7 @@ impl Emulator {
                 self.registers[0xF] = new_vf;
             }
             // SUB_V; 8XY5, subtracts the value in the register VY from the
-            // value in register VY and stores it in register VX.
+            // value in register VX and stores it in register VX.
             (8, _, _, 5) => {
                 // Grab the first register.
                 let x = hex_2;
@@ -389,7 +389,8 @@ impl Emulator {
                 self.registers[x] = new_vx;
                 self.registers[0xF] = new_vf;
             }
-            // SING_RSHIFT; 8XY6, performs a single right shift on the value in register VX.
+            // SING_RSHIFT; 8XY6, performs a single right shift on the value in register VX and
+            // store the overflow bit in the flag register.
             (8, _, _, 6) => {
                 // Grab the value to shift.
                 let x = hex_2;
@@ -399,6 +400,35 @@ impl Emulator {
                 self.registers[x] >>= 1;
                 // Set the dropped bit.
                 self.registers[0xF] = lsb;
+            }
+            // SUB_X; 8XY7, subtracts the value in the register VX from the value
+            // in register VY and stores it in register VX.
+            (8, _, _, 7) => {
+                // Grab the first register.
+                let x = hex_2;
+                // Grab the second register.
+                let y = hex_3;
+                // Perform the subtraction and get the value (which will be a wrapping
+                // subtract if an underflow occurs) and a boolean flag indicating if
+                // an underflow occurred.
+                let (new_vx, borrow) = self.registers[y].overflowing_sub(self.registers[x]);
+                // Set the carry flag for the VF register.
+                let new_vf = if borrow { 0 } else { 1 };
+                // Set the new register values.
+                self.registers[x] = new_vx;
+                self.registers[0xF] = new_vf;
+            }
+            // SING_LSHIFT; 8XYE, performs a single left shift on the value in register VX
+            // and stores the overflowed value in the VF flag register.
+            (8, _, _, 0xE) => {
+                // Grab the register.
+                let x = hex_2;
+                // Grab the overflow bit.
+                let msb = (self.registers[x] >> 7) & 1;
+                // Single left shift the register value.
+                self.registers[x] <<= 1;
+                // Set the flag register to the overflow bit.
+                self.registers[0xF] = msb;
             }
             // TODO 
             // Rust match statements must be exhaustive, so we need this match
