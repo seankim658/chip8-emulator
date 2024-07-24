@@ -1,3 +1,5 @@
+use rand::random;
+
 /// Random-access memory (RAM) size.
 const RAM_SIZE: usize = 4096;
 /// The RAM offset for ROM the available address space.
@@ -261,7 +263,6 @@ impl Emulator {
             (3, _, _, _) => {
                 // Grab the raw value for the comparison.
                 let nn = (opcode & 0xFF) as u8;
-                // Grab the register to retrieve from.
                 let x = hex_2;
                 // Conditional operation.
                 if self.registers[x] == nn {
@@ -274,21 +275,18 @@ impl Emulator {
             (4, _, _, _) => {
                 // Grab the raw value for the comparison.
                 let nn = (opcode & 0xFF) as u8;
-                // Grab the register to retrieve from.
                 let x = hex_2;
                 // Conditional operation.
                 if self.registers[x] != nn {
                     self.program_counter += 2;
                 }
             }
-            // SKIP_V; 5XY0, skip one instruction (2 bytes) if some condition
+            // SKIPEQ_V; 5XY0, skip one instruction (2 bytes) if some condition
             // is true. X is the first register to retrieve a value from and Y
             // is the second register to retrieve a value from. The least
             // significant value is not used (opcode requires it be set to 0).
             (5, _, _, 0) => {
-                // Grab the first register to retrieve from.
                 let x = hex_2;
-                // Grab the second register to retrieve from.
                 let y = hex_3;
                 // Conditional operation.
                 if self.registers[x] == self.registers[y] {
@@ -297,7 +295,6 @@ impl Emulator {
             }
             // SET; 6XNN, set register VX to the value NN.
             (6, _, _, _) => {
-                // Grab the register to set the value for.
                 let x = hex_2;
                 // Grab the value to set the register.
                 let nn = (opcode & 0xFF) as u8;
@@ -305,7 +302,6 @@ impl Emulator {
             }
             // ADD; 7XNN, add the value NN to the value in register VX.
             (7, _, _, _) => {
-                // Grab the register to add to.
                 let x = hex_2;
                 // Grab the value to add.
                 let nn = (opcode & 0xFF) as u8;
@@ -317,9 +313,7 @@ impl Emulator {
             }
             // SET_V; 8XY0, sets the value in register VX to the value in VY.
             (8, _, _, 0) => {
-                // Grab the target register.
                 let x = hex_2;
-                // Grab the source register.
                 let y = hex_3;
                 // Set VX.
                 self.registers[x] = self.registers[y];
@@ -327,9 +321,7 @@ impl Emulator {
             // OR; 8XY1, sets the value in register VX to the result of
             // a bitwise OR with the value in register VY.
             (8, _, _, 1) => {
-                // Grab the first register.
                 let x = hex_2;
-                // Grab the second register.
                 let y = hex_3;
                 // Set the value of VX from the bitwise or.
                 self.registers[x] |= self.registers[y];
@@ -337,9 +329,7 @@ impl Emulator {
             // AND; 8XY2, sets the value in register VX to the result of
             // a bitwise AND with the value in register VY.
             (8, _, _, 2) => {
-                // Grab the first register.
                 let x = hex_2;
-                // Grab the second register.
                 let y = hex_3;
                 // Set the value of VX from the bitwise and.
                 self.registers[x] &= self.registers[y];
@@ -347,9 +337,7 @@ impl Emulator {
             // XOR; 8XY3, sets the value in register VX to the result of
             // a bitwise XOR with the value in register VY.
             (8, _, _, 3) => {
-                // Grab the first register.
                 let x = hex_2;
-                // Grab the second register.
                 let y = hex_3;
                 // Set the value of VX from the bitwise XOR.
                 self.registers[x] ^= self.registers[y];
@@ -357,9 +345,7 @@ impl Emulator {
             // ADD_V; 8XY4, adds the value in register VY to the value
             // in register VX and stores it in register VX.
             (8, _, _, 4) => {
-                // Grab the first register.
                 let x = hex_2;
-                // Grab the second register.
                 let y = hex_3;
                 // Add the values together and get the value (which will be a wrapping
                 // add if an overflow occurs) and a boolean flag indicating if an
@@ -375,9 +361,7 @@ impl Emulator {
             // SUB_V; 8XY5, subtracts the value in the register VY from the
             // value in register VX and stores it in register VX.
             (8, _, _, 5) => {
-                // Grab the first register.
                 let x = hex_2;
-                // Grab the second register.
                 let y = hex_3;
                 // Perform the subtraction and get the value (which will be a wrapping
                 // subtract if an underflow occurs) and a boolean flag indicating if
@@ -392,7 +376,6 @@ impl Emulator {
             // SING_RSHIFT; 8XY6, performs a single right shift on the value in register VX and
             // store the overflow bit in the flag register.
             (8, _, _, 6) => {
-                // Grab the value to shift.
                 let x = hex_2;
                 // Capture the dropped bit.
                 let lsb = self.registers[x] & 1;
@@ -404,9 +387,7 @@ impl Emulator {
             // SUB_X; 8XY7, subtracts the value in the register VX from the value
             // in register VY and stores it in register VX.
             (8, _, _, 7) => {
-                // Grab the first register.
                 let x = hex_2;
-                // Grab the second register.
                 let y = hex_3;
                 // Perform the subtraction and get the value (which will be a wrapping
                 // subtract if an underflow occurs) and a boolean flag indicating if
@@ -421,7 +402,6 @@ impl Emulator {
             // SING_LSHIFT; 8XYE, performs a single left shift on the value in register VX
             // and stores the overflowed value in the VF flag register.
             (8, _, _, 0xE) => {
-                // Grab the register.
                 let x = hex_2;
                 // Grab the overflow bit.
                 let msb = (self.registers[x] >> 7) & 1;
@@ -429,6 +409,92 @@ impl Emulator {
                 self.registers[x] <<= 1;
                 // Set the flag register to the overflow bit.
                 self.registers[0xF] = msb;
+            }
+            // SKIPNEQ_V; 9XY0, skips the next instruction if the values retrieved from registers X
+            // and Y are not equal.
+            (9, _, _, 0) => {
+                let x = hex_2;
+                let y = hex_3;
+                // Conditional check.
+                if self.registers[x] != self.registers[y] {
+                    self.program_counter += 2;
+                }
+            }
+            // SET_I; ANNN, sets the index register to the value NNN (points to an address in RAM).
+            (0xA, _, _, _) => {
+                // Get the 12 bit address.
+                let nnn = opcode & 0xFFF;
+                self.i_register = nnn;
+            }
+            // JUMP_V0NNN; BNNN, moves the program counter to the sum of the value stored in
+            // register 0 and the value NNN.
+            (0xB, _, _, _) => {
+                let nnn = opcode & 0xFFF;
+                self.program_counter = (self.registers[0] as u16) + nnn;
+            }
+            // RAND; CXNN, the chip8 random number generator. Calculates a random number and then
+            // bitwise ANDs it with the lower 8 bits of the opcode (NN) and store the value in
+            // register X.
+            (0xC, _, _, _) => {
+                let x = hex_2;
+                let nn = (opcode & 0xFF) as u8;
+                let rng: u8 = random();
+                self.registers[x] = rng & nn;
+            }
+            // DRAW; DXYN, draws a sprite on screen at a specific X, Y point. Grabs the X and Y
+            // coordinates from the X and Y registers and the sprite pixel height (1 to 16) from
+            // the raw N value. The sprites are stored row by row with the first row at the address
+            // stored in the index register and each row stored consecutively after that (each row
+            // is 8-bits, hence the sprites always being 8 pixels wide).
+            //
+            // 1 (on) means that pixel should be toggled (XORed with the current screen state).
+            // 0 (off) means that pixel should be left unchanged.
+            //
+            // The flag VF register is used to indicate if any pixel collision occured during the
+            // drawing process. A collision happens when a sprite pixel tries to flip an
+            // already-set screen pixel from on to off. VF is set to 1 if any screen pixel is
+            // flipped from set (on) to unset (off) during the draw operation.
+            (0xD, _, _, _) => {
+                // Get the X, Y coordinates
+                let xc = self.registers[hex_2] as u16;
+                let yc = self.registers[hex_3] as u16;
+                // Grab the sprite height.
+                let height = hex_4;
+
+                // collision flag
+                let mut collision = false;
+
+                for row in 0..height {
+                    // Get the memory address for the row.
+                    let address = self.i_register + (row as u16);
+                    // Get the pixel flags.
+                    let pixels = self.ram[address as usize];
+
+                    for column in 0..8 {
+                        // Check if the sprite pixel should be set to on (1).
+                        if (pixels & (0x80 >> column)) != 0 {
+                            // Wrap the sprite if it overflows over the edge or bottom of the
+                            // screen.
+                            let x = (xc + column) as usize % SCREEN_WIDTH;
+                            let y = (yc + row as u16) as usize % SCREEN_HEIGHT;
+
+                            // Get the pixel index from the row major stored screen array.
+                            let idx = x + (SCREEN_WIDTH * y);
+
+                            // Bitwise OR with the existing pixel value, captures whether we are
+                            // flipping the pixel.
+                            collision |= self.screen[idx];
+                            // Set the pixel value by using bitwise XOR.
+                            self.screen[idx] ^= true;
+                        }
+                    }
+                }
+
+                if collision {
+                    self.registers[0xF] = 1;
+                } else {
+                    self.registers[0xF] = 0;
+                }
             }
             // TODO 
             // Rust match statements must be exhaustive, so we need this match
